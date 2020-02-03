@@ -1,0 +1,9 @@
+node_modules
+.nvmrc
+.vscode
+yarn.lock
+README.md
+build
+*.log
+public/env.js
+.git

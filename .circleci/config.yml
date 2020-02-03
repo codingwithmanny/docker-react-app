@@ -1,0 +1,79 @@
+version: 2.1 # use CircleCI 2.0
+
+jobs: # a collection of steps
+  test: # runs not using Workflows must have a `build` job as entry point
+    working_directory: ~/repository # our name of the directory where steps will run
+    docker: # run the steps with Docker
+      - image: circleci/node:10.16.3 # ...with this image as the primary container; this is where all `steps` will run
+    steps: # a collection of executable commands
+      - checkout # special step to check out source code to working directory
+      - run:
+          name: update-npm
+          command: 'sudo npm install -g npm@latest'
+      - restore_cache: # special step to restore the dependency cache
+          # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: install-npm
+          command: npm install
+      - save_cache: # special step to save the dependency cache
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run: # run tests
+          name: test
+          command: npm run test-nowatch
+
+  build:
+    machine: true
+    steps:
+      - checkout
+
+      - run: echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_LOGIN --password-stdin
+
+      - run: echo "$CIRCLE_SHA1" > .version
+
+      # build the application image
+      - run: docker build . -t $DOCKER_IMAGE:latest
+
+      # deploy the image
+
+      - run: docker push $DOCKER_IMAGE:latest
+
+      - run: docker tag $DOCKER_IMAGE:latest $DOCKER_IMAGE:$CIRCLE_SHA1
+
+      - run: docker push $DOCKER_IMAGE:$CIRCLE_SHA1
+
+      - run: echo "Docker build made sucessfully!! for $CIRCLE_SHA1"
+
+  deploy:
+      machine: true
+      steps:
+        - checkout
+        - run: sudo apt-get update
+        - run: sudo apt-get install -y awscli
+        - run: export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"; export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY";
+        - run: echo "$CIRCLE_SHA1" > .version
+        - run: zip -r deployment-frontend-${CIRCLE_SHA1}.zip .
+        - run: aws s3 cp deployment-frontend-${CIRCLE_SHA1}.zip s3://test-docker-react-app --region $AWS_EBS_REGION
+        - run: aws elasticbeanstalk create-application-version --application-name $AWS_EBS_APP --version-label ${CIRCLE_SHA1} --source-bundle S3Bucket="test-docker-react-app",S3Key="deployment-${CIRCLE_SHA1}.zip" --region $AWS_EBS_REGION
+        - run: aws elasticbeanstalk update-environment --application-name $AWS_EBS_APP --environment-name $AWS_EBS_ENV --version-label ${CIRCLE_SHA1} --region $AWS_EBS_REGION
+
+
+workflows:
+  version: 2
+  test-build-deploy:
+    jobs:
+      - test
+      - build:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
