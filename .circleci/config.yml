@@ -55,8 +55,8 @@ jobs: # a collection of steps
         - run: sudo apt-get install -y awscli
         - run: export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"; export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY";
         - run: echo "$CIRCLE_SHA1" > .version
-        - run: zip -r deployment-frontend-${CIRCLE_SHA1}.zip .
-        - run: aws s3 cp deployment-frontend-${CIRCLE_SHA1}.zip s3://test-docker-react-app --region $AWS_EBS_REGION
+        - run: zip -r deployment-${CIRCLE_SHA1}.zip .
+        - run: aws s3 cp deployment-${CIRCLE_SHA1}.zip s3://test-docker-react-app --region $AWS_EBS_REGION
         - run: aws elasticbeanstalk create-application-version --application-name $AWS_EBS_APP --version-label ${CIRCLE_SHA1} --source-bundle S3Bucket="test-docker-react-app",S3Key="deployment-${CIRCLE_SHA1}.zip" --region $AWS_EBS_REGION
         - run: aws elasticbeanstalk update-environment --application-name $AWS_EBS_APP --environment-name $AWS_EBS_ENV --version-label ${CIRCLE_SHA1} --region $AWS_EBS_REGION
 
