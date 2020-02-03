@@ -26,6 +26,7 @@ jobs: # a collection of steps
 
   build:
     machine: true
+    working_directory: ~/repository
     steps:
       - checkout
 
