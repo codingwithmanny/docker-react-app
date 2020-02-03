@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { withRouter } from 'react-router-dom';
 
 const Dashboard = props => {
@@ -13,7 +13,7 @@ const Dashboard = props => {
         props.history.push('/login');
     }
 
-    useEffect(() => {
+    const onLoad = useCallback(() => {
         fetch('http://api.gitbranch.xyz/api/auth/me',
         {
             method: 'get',
@@ -49,7 +49,11 @@ const Dashboard = props => {
                 errors: error.error
             });
         })
-    }, [state]);
+    }, []);
+
+    useEffect(() => {
+        onLoad();
+    }, [onLoad]);
 
 return (state.loading ? <section>{state.errors ? <p>{JSON.stringify(state.errors)}</p> : <p>Loading...</p>}</section> : <div>
         <nav>
