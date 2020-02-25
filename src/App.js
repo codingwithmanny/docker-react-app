@@ -8,7 +8,7 @@ const App = () => {
   const hasToken = () => {
     return (localStorage.getItem('GITBRANCH_TOKEN') && true) || false;
   }
-
+  {/** Small note */}
   return (<Switch>
   <Route exact path={'/'} render={() => hasToken() ? <Redirect to={'/dashboard'}/> : <Redirect to={'/login'}/>} />
   <Route exact path={'/login'} render={() => hasToken() ? <Redirect to={'/dashboard'}/> :<Login />} />
