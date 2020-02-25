@@ -1,26 +1,25 @@
-version: 2.1 # use CircleCI 2.0
+version: 2.1
 
-jobs: # a collection of steps
-  test: # runs not using Workflows must have a `build` job as entry point
-    working_directory: ~/repository # our name of the directory where steps will run
-    docker: # run the steps with Docker
-      - image: circleci/node:10.16.3 # ...with this image as the primary container; this is where all `steps` will run
-    steps: # a collection of executable commands
-      - checkout # special step to check out source code to working directory
+jobs:
+  test:
+    working_directory: ~/repository
+    docker:
+      - image: circleci/node:10.16.3
+    steps:
+      - checkout
       - run:
           name: update-npm
           command: 'sudo npm install -g npm@latest'
-      - restore_cache: # special step to restore the dependency cache
-          # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+      - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
           name: install-npm
           command: npm install
-      - save_cache: # special step to save the dependency cache
+      - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - ./node_modules
-      - run: # run tests
+      - run:
           name: test
           command: npm run test-nowatch
 
@@ -29,22 +28,12 @@ jobs: # a collection of steps
     working_directory: ~/repository
     steps:
       - checkout
-
       - run: echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_LOGIN --password-stdin
-
       - run: echo "$CIRCLE_SHA1" > .version
-
-      # build the application image
       - run: docker build . -t $DOCKER_IMAGE:latest
-
-      # deploy the image
-
       - run: docker push $DOCKER_IMAGE:latest
-
       - run: docker tag $DOCKER_IMAGE:latest $DOCKER_IMAGE:$CIRCLE_SHA1
-
       - run: docker push $DOCKER_IMAGE:$CIRCLE_SHA1
-
       - run: echo "Docker build made sucessfully!! for $CIRCLE_SHA1"
 
   deploy:
